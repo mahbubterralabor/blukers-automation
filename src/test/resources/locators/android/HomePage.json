@@ -1,0 +1,6 @@
+{
+  "loginButton": {
+    "type": "accessibilityId",
+    "value": "login_button"
+  }
+}
