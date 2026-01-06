@@ -1,62 +1,64 @@
 package com.blukers.automation.locators;
 
+import com.blukers.automation.config.Platform;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.io.InputStream;
-import java.util.Collections;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 public final class LocatorLoader {
 
-    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+    private static final ObjectMapper MAPPER = new ObjectMapper();
 
-    // Cache: platform/pageName -> locator map
-    private static final Map<String, Map<String, LocatorModel>> CACHE =
+    /**
+     * Cache structure:
+     *   ANDROID -> HomePage -> Map<key, LocatorModel>
+     *   IOS     -> HomePage -> Map<key, LocatorModel>
+     */
+    private static final Map<Platform, Map<String, Map<String, LocatorModel>>> CACHE =
             new ConcurrentHashMap<>();
 
     private LocatorLoader() {
         // utility class
     }
 
-    public static Map<String, LocatorModel> load(
-            String platform,
-            String pageName
-    ) {
-        String cacheKey = platform + "/" + pageName;
+    public static Map<String, LocatorModel> load(Platform platform, String pageName) {
 
-        return CACHE.computeIfAbsent(cacheKey, key -> {
-            String resourcePath = String.format(
-                    "locators/%s/%s.json",
-                    platform.toLowerCase(),
-                    pageName
-            );
+        return CACHE
+                .computeIfAbsent(platform, p -> new ConcurrentHashMap<>())
+                .computeIfAbsent(pageName, p -> loadFromFile(platform, pageName));
+    }
 
-            try (InputStream is = LocatorLoader.class
-                    .getClassLoader()
-                    .getResourceAsStream(resourcePath)) {
+    private static Map<String, LocatorModel> loadFromFile(Platform platform, String pageName) {
 
-                if (is == null) {
-                    throw new IllegalStateException(
-                            "Locator file not found: " + resourcePath
-                    );
-                }
+        String resourcePath = String.format(
+                "locators/%s/%s.json",
+                platform.name().toLowerCase(),
+                pageName
+        );
 
-                Map<String, LocatorModel> locators =
-                        OBJECT_MAPPER.readValue(
-                                is,
-                                new TypeReference<>() {}
-                        );
+        try (InputStream is = LocatorLoader.class
+                .getClassLoader()
+                .getResourceAsStream(resourcePath)) {
 
-                return Collections.unmodifiableMap(locators);
-
-            } catch (Exception e) {
-                throw new RuntimeException(
-                        "Failed to load locators for " + cacheKey,
-                        e
+            if (is == null) {
+                throw new IllegalStateException(
+                        "Locator file not found: " + resourcePath
                 );
             }
-        });
+
+            return MAPPER.readValue(
+                    is,
+                    new TypeReference<Map<String, LocatorModel>>() {}
+            );
+
+        } catch (Exception e) {
+            throw new RuntimeException(
+                    "Failed to load locator file: " + resourcePath,
+                    e
+            );
+        }
     }
 }

@@ -6,22 +6,39 @@ import com.blukers.automation.config.app.AppConfig;
 import com.blukers.automation.config.appium.AppiumConfig;
 import com.blukers.automation.config.platform.android.AndroidConfig;
 import com.blukers.automation.config.platform.ios.IOSConfig;
+
 import io.appium.java_client.AppiumDriver;
 import io.appium.java_client.android.AndroidDriver;
 import io.appium.java_client.android.options.UiAutomator2Options;
 import io.appium.java_client.ios.IOSDriver;
 import io.appium.java_client.ios.options.XCUITestOptions;
+
 import java.net.URL;
 
 public final class DriverFactory {
 
-    private DriverFactory() {}
+    private DriverFactory() {
+        // utility class
+    }
 
     public static AppiumDriver createDriver(FrameworkConfig config) {
+
         try {
-            return switch (config.getPlatform()) {
-                case ANDROID -> createAndroidDriver(config.getApp(), config.getAppium(), config.getAndroid());
-                case IOS -> createIOSDriver(config.getApp(), config.getAppium(), config.getIos());
+            Platform platform = config.getPlatform();
+
+            return switch (platform) {
+                case ANDROID -> createAndroidDriver(
+                        platform,
+                        config.getApp(),
+                        config.getAppium(),
+                        config.getAndroid()
+                );
+                case IOS -> createIOSDriver(
+                        platform,
+                        config.getApp(),
+                        config.getAppium(),
+                        config.getIos()
+                );
             };
         } catch (Exception e) {
             throw new RuntimeException("Failed to create Appium driver", e);
@@ -29,13 +46,16 @@ public final class DriverFactory {
     }
 
     private static AppiumDriver createAndroidDriver(
-            AppConfig app, AppiumConfig appium, AndroidConfig android) throws Exception {
+            Platform platform,
+            AppConfig app,
+            AppiumConfig appium,
+            AndroidConfig android
+    ) throws Exception {
 
         UiAutomator2Options options = new UiAutomator2Options();
 
-        // No more hard-coded strings here!
-        options.setPlatformName(Platform.ANDROID.getPlatformName());
-        options.setAutomationName(Platform.ANDROID.getAutomationName());
+        options.setPlatformName(platform.getPlatformName());
+        options.setAutomationName(platform.getAutomationName());
 
         if (app.getAppPath() != null && !app.getAppPath().isBlank()) {
             options.setApp(app.getAppPath());
@@ -49,17 +69,23 @@ public final class DriverFactory {
             options.setUdid(android.getDeviceUdid());
         }
 
-        return new AndroidDriver(new URL(appium.getServerUrl()), options);
+        return new AndroidDriver(
+                new URL(appium.getServerUrl()),
+                options
+        );
     }
 
     private static AppiumDriver createIOSDriver(
-            AppConfig app, AppiumConfig appium, IOSConfig ios) throws Exception {
+            Platform platform,
+            AppConfig app,
+            AppiumConfig appium,
+            IOSConfig ios
+    ) throws Exception {
 
         XCUITestOptions options = new XCUITestOptions();
 
-        // No more hard-coded strings here!
-        options.setPlatformName(Platform.IOS.getPlatformName());
-        options.setAutomationName(Platform.IOS.getAutomationName());
+        options.setPlatformName(platform.getPlatformName());
+        options.setAutomationName(platform.getAutomationName());
 
         if (app.getAppPath() != null && !app.getAppPath().isBlank()) {
             options.setApp(app.getAppPath());
@@ -68,6 +94,9 @@ public final class DriverFactory {
         options.setNoReset(app.isNoReset());
         options.setBundleId(ios.getBundleId());
 
-        return new IOSDriver(new URL(appium.getServerUrl()), options);
+        return new IOSDriver(
+                new URL(appium.getServerUrl()),
+                options
+        );
     }
 }
