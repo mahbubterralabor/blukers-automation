@@ -4,14 +4,17 @@ import io.cucumber.testng.AbstractTestNGCucumberTests;
 import io.cucumber.testng.CucumberOptions;
 
 @CucumberOptions(
-        features = "classpath:features",
+        features = "src/test/resources/features",
         glue = {
                 "com.blukers.automation.steps",
                 "com.blukers.automation.hooks"
         },
         plugin = {
-                "pretty"
-        }
+                "pretty",
+                "html:target/cucumber-report.html",
+                "json:target/cucumber-report.json"
+        },
+        tags = "@sanity"
 )
 public class CucumberTestRunner extends AbstractTestNGCucumberTests {
 }
