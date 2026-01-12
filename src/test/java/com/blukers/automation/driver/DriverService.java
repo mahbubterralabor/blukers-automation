@@ -5,11 +5,8 @@ import com.blukers.automation.util.Log;
 import org.slf4j.Logger;
 
 /**
- * DriverService is responsible ONLY for:
- * - Starting the driver
- * - Stopping the driver
- *
- * It does NOT load or validate configuration.
+ * Responsible ONLY for starting and stopping the Appium driver.
+ * Does NOT load or validate configuration.
  */
 public final class DriverService {
 
@@ -20,13 +17,13 @@ public final class DriverService {
     }
 
     /**
-     * Starts a new Appium driver using the provided framework configuration.
+     * Starts Appium driver for the current scenario.
      */
     public static void start(FrameworkConfig config) {
         log.info("Starting Appium driver");
 
         if (DriverManager.hasDriver()) {
-            log.warn("Driver already exists. Skipping driver start.");
+            log.warn("Driver already exists for this thread. Skipping start.");
             return;
         }
 
@@ -42,7 +39,7 @@ public final class DriverService {
     }
 
     /**
-     * Stops the Appium driver and cleans up ThreadLocal storage.
+     * Stops Appium driver for the current scenario.
      */
     public static void stop() {
         log.info("Stopping Appium driver");

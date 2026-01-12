@@ -13,90 +13,75 @@ import io.appium.java_client.android.options.UiAutomator2Options;
 import io.appium.java_client.ios.IOSDriver;
 import io.appium.java_client.ios.options.XCUITestOptions;
 
-import java.net.URL;
+import java.net.URI;
 
+/**
+ * Creates AppiumDriver instances based on platform.
+ * Used Fluent Interface (Method Chaining) for cleaner configuration.
+ */
 public final class DriverFactory {
 
-    private DriverFactory() {
-        // utility class
-    }
+    private DriverFactory() {}
 
     public static AppiumDriver createDriver(FrameworkConfig config) {
+        Platform platform = config.getPlatform();
+        AppConfig app = config.getApp();
+        AppiumConfig appium = config.getAppium();
 
         try {
-            Platform platform = config.getPlatform();
-
             return switch (platform) {
-                case ANDROID -> createAndroidDriver(
-                        platform,
-                        config.getApp(),
-                        config.getAppium(),
-                        config.getAndroid()
-                );
-                case IOS -> createIOSDriver(
-                        platform,
-                        config.getApp(),
-                        config.getAppium(),
-                        config.getIos()
-                );
+                case ANDROID -> createAndroidDriver(app, appium, config.getAndroid());
+                case IOS -> createIOSDriver(app, appium, config.getIos());
             };
         } catch (Exception e) {
-            throw new RuntimeException("Failed to create Appium driver", e);
+            throw new RuntimeException("Failed to create Appium driver for platform: " + platform, e);
         }
     }
 
     private static AppiumDriver createAndroidDriver(
-            Platform platform,
             AppConfig app,
             AppiumConfig appium,
             AndroidConfig android
     ) throws Exception {
 
-        UiAutomator2Options options = new UiAutomator2Options();
+        // Method Chaining / Fluent Interface implementation
+        UiAutomator2Options options = new UiAutomator2Options()
+                .setPlatformName("Android")
+                .setAutomationName("UiAutomator2")
+                .setNoReset(app.isNoReset())
+                .setAppPackage(android.getAppPackage())
+                .setAppActivity(android.getAppActivity());
 
-        options.setPlatformName(platform.getPlatformName());
-        options.setAutomationName(platform.getAutomationName());
-
+        // Conditional chaining for optional parameters
         if (app.getAppPath() != null && !app.getAppPath().isBlank()) {
             options.setApp(app.getAppPath());
         }
-
-        options.setNoReset(app.isNoReset());
-        options.setAppPackage(android.getAppPackage());
-        options.setAppActivity(android.getAppActivity());
 
         if (android.getDeviceUdid() != null && !android.getDeviceUdid().isBlank()) {
             options.setUdid(android.getDeviceUdid());
         }
 
-        return new AndroidDriver(
-                new URL(appium.getServerUrl()),
-                options
-        );
+        return new AndroidDriver(URI.create(appium.getServerUrl()).toURL(), options);
     }
 
     private static AppiumDriver createIOSDriver(
-            Platform platform,
             AppConfig app,
             AppiumConfig appium,
             IOSConfig ios
     ) throws Exception {
 
-        XCUITestOptions options = new XCUITestOptions();
+        // Method Chaining / Fluent Interface implementation
+        XCUITestOptions options = new XCUITestOptions()
+                .setPlatformName("iOS")
+                .setAutomationName("XCUITest")
+                .setNoReset(app.isNoReset())
+                .setBundleId(ios.getBundleId());
 
-        options.setPlatformName(platform.getPlatformName());
-        options.setAutomationName(platform.getAutomationName());
-
+        // Conditional chaining for optional parameters
         if (app.getAppPath() != null && !app.getAppPath().isBlank()) {
             options.setApp(app.getAppPath());
         }
 
-        options.setNoReset(app.isNoReset());
-        options.setBundleId(ios.getBundleId());
-
-        return new IOSDriver(
-                new URL(appium.getServerUrl()),
-                options
-        );
+        return new IOSDriver(URI.create(appium.getServerUrl()).toURL(), options);
     }
 }

@@ -1,14 +1,20 @@
 package com.blukers.automation.locators;
 
 import com.blukers.automation.config.Platform;
+import com.blukers.automation.util.Log;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.slf4j.Logger;
 
 import java.io.InputStream;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+//import java.util.logging.Logger;
 
 public final class LocatorLoader {
+
+
+    private static final Logger log = Log.get(LocatorLoader.class);
 
     private static final ObjectMapper MAPPER = new ObjectMapper();
 
