@@ -25,7 +25,7 @@ Test Automation for Blukers App
 
 
 ## **Compoent Diagram:**
-![Screenshot 2026-01-14 at 10.57.59 AM.png](../Screenshots_for_automation/Screenshot%202026-01-14%20at%2010.57.59%E2%80%AFAM.png)
+![img_1.png](img_1.png)
 
 
 ## ** Test Execution Flow **##
