@@ -1,0 +1,14 @@
+{
+  "email_option": {
+    "type": "accessibilityId",
+    "value": "Email"
+  },
+  "google_option": {
+    "type": "accessibilityId",
+    "value": "Google"
+  },
+  "apple_option": {
+    "type": "accessibilityId",
+    "value": "Apple"
+  }
+}

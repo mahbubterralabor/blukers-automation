@@ -1,6 +1,10 @@
 {
-  "loginButton": {
-    "type": "accessibilityId",
-    "value": "login_button"
+  "login_button": {
+    "type": "accessibility id",
+    "value": "Login"
+  },
+  "signup_button": {
+    "type": "accessibility id",
+    "value": "Sign Up"
   }
 }
