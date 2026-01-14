@@ -28,5 +28,5 @@ Test Automation for Blukers App
 ![img_1.png](img_1.png)
 
 
-## ** Test Execution Flow **
+## Test Execution Flow
 ![img.png](img.png)
