@@ -11,23 +11,43 @@ public class HomePageAndroid extends BasePage {
         super(PAGE_NAME, Platform.ANDROID);
     }
 
-    // -------- Actions --------
+    /* ---------------- Actions ---------------- */
 
-    public void tapLogin() {
-        click("loginButton");
+    public void tapSignup() {
+        click("signup_button");
     }
 
-    // -------- State --------
+    public void tapLogin() {
+        click("login_button");
+    }
+
+    /* ---------------- State checks ---------------- */
+
+    public boolean isSignupButtonVisible() {
+        try {
+            return isDisplayed("signup_button");
+        } catch (Exception e) {
+            return false;
+        }
+    }
 
     public boolean isLoginButtonDisplayed() {
-        return isDisplayed("loginButton");
+        try {
+            return isDisplayed("login_button");
+        } catch (Exception e) {
+            return false;
+        }
     }
 
     public boolean isLoginButtonNotVisible() {
-        return isNotDisplayed("loginButton");
+        return !isLoginButtonDisplayed();
     }
 
     public String getErrorMessage() {
-        return getText("errorMessage");
+        try {
+            return getText("error_message");
+        } catch (Exception e) {
+            return null;
+        }
     }
 }

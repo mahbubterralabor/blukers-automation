@@ -1,0 +1,14 @@
+{
+  "emailInput": {
+    "type": "xpath",
+    "value": "//android.widget.ScrollView/android.widget.EditText"
+  },
+  "passwordInput": {
+    "type": "accessibilityId",
+    "value": "Password"
+  },
+  "loginButton": {
+    "type": "accessibilityId",
+    "value": "Login"
+  }
+}

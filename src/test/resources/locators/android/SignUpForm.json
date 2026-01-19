@@ -1,13 +1,13 @@
 {
-  "email_field": {
-    "type": "androidUiAutomator",
+  "emailInput": {
+    "type": "uiautomator",
     "value": "new UiSelector().className(\"android.widget.EditText\").instance(0)"
   },
-  "password_field": {
-    "type": "androidUiAutomator",
+  "passwordInput": {
+    "type": "uiautomator",
     "value": "new UiSelector().className(\"android.widget.EditText\").instance(1)"
   },
-  "signup_submit_button": {
+  "signUpButton": {
     "type": "accessibilityId",
     "value": "Sign Up"
   }
