@@ -14,7 +14,7 @@ import io.cucumber.testng.CucumberOptions;
                 "html:target/cucumber-report.html",
                 "json:target/cucumber-report.json"
         },
-        tags = "@signup"
+        tags = "@login"
 )
 public class CucumberTestRunner extends AbstractTestNGCucumberTests {
 }

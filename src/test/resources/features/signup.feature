@@ -6,7 +6,7 @@ Feature: New User Registration
 
   @signup @happy
   Scenario: Successful signup with email
-    Given I am on the home screen
+    Given I am on the home screen for signup
     When I choose to sign up with email
     And I enter email "mmh1bd+106@gmail.com" and password "BluTest@2026"
     And I submit the signup form

@@ -14,8 +14,8 @@ public class SignupSteps {
     private final SignUpFormPageAndroid signupFormPage = new SignUpFormPageAndroid();
     private final ProfileSetupPageAndroid profileSetupPage = new ProfileSetupPageAndroid();
 
-    @Given("I am on the home screen")
-    public void iAmOnTheHomeScreen() {
+    @Given("I am on the home screen for signup")
+    public void iAmOnTheHomeScreeForSignUpn() {
         Assert.assertTrue(
                 homePage.isSignupButtonVisible(),
                 "Signup button should be visible on Home screen"
@@ -41,8 +41,6 @@ public class SignupSteps {
 
     @Then("I should be navigated to profile setup page")
     public void iShouldBeNavigatedToProfileSetupPage() {
-
-        // REAL assertion – no temporary pass
         Assert.assertTrue(
                 profileSetupPage.isGetStartedButtonVisible(),
                 "Profile Setup page was not displayed after signup"

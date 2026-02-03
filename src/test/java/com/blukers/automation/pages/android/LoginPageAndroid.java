@@ -8,11 +8,31 @@ import com.blukers.automation.steps.LoginSteps;
 public class LoginPageAndroid extends BasePage{
 
     public LoginPageAndroid(){
-        super("Login",Platform.ANDROID);
+        super("LoginPage",Platform.ANDROID);
     }
 
     public boolean isLoginScreenVisible(){
         return isDisplayed("emailInput");
     }
+
+    public void enterEmail(String email){
+        type("emailInput",email);
+    }
+
+    public void enterPassword(String password){
+        type("passwordInput",password);
+    }
+
+    public boolean isLoginButtonEnabled(){
+        return isEnabled("loginButton");
+    }
+
+    public void tapOnLogInButton(){
+        click("loginButton");
+    }
+
+
+
+
 
 }
