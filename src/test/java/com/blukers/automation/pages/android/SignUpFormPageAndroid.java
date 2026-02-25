@@ -1,12 +1,12 @@
 package com.blukers.automation.pages.android;
 
 import com.blukers.automation.config.Platform;
-import com.blukers.automation.pages.base.BasePage;
+import com.blukers.automation.pages.base.BasePage_Backup;
 
-public class SignUpFormPageAndroid extends BasePage {
+public class SignUpFormPageAndroid extends BasePage_Backup {
 
     public SignUpFormPageAndroid() {
-        super("SignUpForm", Platform.ANDROID);
+        super("SignUpFormPage", Platform.ANDROID);
     }
 
     public void waitForFormVisible() {
@@ -17,12 +17,12 @@ public class SignUpFormPageAndroid extends BasePage {
 
     public void enterEmail(String email) {
         waitForVisible("emailInput");
-        type("emailInput", email);
+        adbType("emailInput", email);
     }
 
     public void enterPassword(String password) {
         waitForVisible("passwordInput");
-        type("passwordInput", password);
+        adbType("passwordInput", password);
     }
 
     public void submitSignup() {

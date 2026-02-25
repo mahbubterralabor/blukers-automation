@@ -1,73 +1,93 @@
 package com.blukers.automation.steps;
 
 import com.blukers.automation.pages.android.HomePageAndroid;
-import com.blukers.automation.pages.android.LoginPageAndroid;
 import com.blukers.automation.pages.android.JobSearchLandingPageAndroid;
-//import com.blukers.automation.steps.CommonSteps;
+import com.blukers.automation.pages.android.LoginPageAndroid;
+import com.blukers.automation.testdata.TestDataContext;
+import com.blukers.automation.testdata.TestDataLoader;
+import com.blukers.automation.testdata.model.LoginData;
 import io.cucumber.java.en.Given;
-import io.cucumber.java.en.When;
 import io.cucumber.java.en.Then;
+import io.cucumber.java.en.When;
 import org.testng.Assert;
 
-
 public class LoginSteps {
-    private final LoginPageAndroid loginPage;
-    private final HomePageAndroid homePageAndroid;
-    private final JobSearchLandingPageAndroid exploreJobs;
-//    private final CommonSteps commonSteps;
 
-    public LoginSteps(){
-        this.loginPage= new LoginPageAndroid();
-        this.homePageAndroid=new HomePageAndroid();
-        this.exploreJobs = new JobSearchLandingPageAndroid();
-//        this.commonSteps= new CommonSteps();
-    }
+    private final HomePageAndroid homePage = new HomePageAndroid();
+    private final LoginPageAndroid loginPage = new LoginPageAndroid();
+    private final JobSearchLandingPageAndroid jobSearchPage = new JobSearchLandingPageAndroid();
+
+    private LoginData loginData;
 
     @Given("I am on the home screen for login")
-    public void iAmOnTheHomeScreenForLogin(){
+    public void iAmOnTheHomeScreenForLogin() {
+
         Assert.assertTrue(
-                homePageAndroid.isLoginButtonDisplayed(),
-                "Login Option is not available"
+                homePage.isLoginButtonDisplayed(),
+                "Login option is not available on Home screen."
+        );
+
+        String dataKey = TestDataContext.getDataKey();
+        Assert.assertNotNull(dataKey,
+                "Missing @data_* tag on Scenario (Hooks could not resolve a dataKey). Example: @data_login_valid"
+        );
+
+        // For login feature, file name is "login" => testdata/login.json
+        this.loginData = TestDataLoader.load("login", dataKey, LoginData.class);
+
+        Assert.assertNotNull(
+                loginData,
+                "LoginData was not loaded. Check testdata/login.json and tag key: " + dataKey
         );
     }
 
     @When("I tap on homepage login button")
-    public void iTapOnHomePageLoginButton(){
-        homePageAndroid.tapLogin();
+    public void iTapOnHomepageLoginButton() {
+        homePage.tapLogin();
+
         Assert.assertTrue(
                 loginPage.isLoginScreenVisible(),
-                "It is not redirected to login screen"
+                "Home screen did not redirect to Login screen."
         );
     }
 
-    @When("I enter login email {string}")
-    public void iEnterLoginEmail(String email) throws InterruptedException {
-        loginPage.enterEmail(email);
-        Thread.sleep(10000);
-    }
+    @When("I enter login credentials")
+    public void iEnterLoginCredentials() {
 
-    @When("I enter password {string}")
-    public void iEnterLoginPassword(String password) throws InterruptedException {
-        loginPage.adbType("passwordInput", password);
-        //loginPage.enterPassword(password);
-        Thread.sleep(10000);
-        Assert.assertTrue(
-                loginPage.isLoginButtonEnabled(),
-                "Login Button is not enabled. Please check your input - email and password"
+        Assert.assertNotNull(
+                loginData,
+                "LoginData is null. Ensure scenario has @data_* tag and Given step ran."
         );
+
+        loginPage.enterEmail(loginData.getEmail());
+        loginPage.enterPassword(loginData.getPassword());
     }
 
     @When("I tap on login button")
-    public void iTapOnLoginButton(){
+    public void iTapOnLoginButton() {
         loginPage.tapOnLogInButton();
     }
 
-    @Then ("I should be navigated to job search page")
-    public void iShouldBeNavigatedToJobSearchPage(){
-        System.out.println("Checking for Job Search Page visibility...");
+    @Then("I should be navigated to job search page")
+    public void iShouldBeNavigatedToJobSearchPage() {
         Assert.assertTrue(
-                exploreJobs.isJobSearchPageVisibile(),
-                "Timed out waiting for Job Search page. Current screen might still be loading."
+                jobSearchPage.isJobSearchPageVisibile(),
+                "Timed out waiting for Job Search page after login."
+        );
+    }
+
+//    @Then("I should receive login attempt fail message")
+//    public void iShouldReceiveLoginAttemptFailMessage() {
+//        Assert.assertTrue(
+//                loginPage.isLoginErrorMessageVisible(),
+//                "Expected login failure message was not displayed."
+//        );
+//    }
+    @Then ("I should remain on the login page")
+    public void iShouldRemainOnTheLoginPage(){
+        Assert.assertTrue(
+                loginPage.isLoginButtonEnabled(),
+                "App is login with incorrect credentials"
         );
     }
 }

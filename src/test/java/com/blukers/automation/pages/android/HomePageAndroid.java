@@ -1,9 +1,9 @@
 package com.blukers.automation.pages.android;
 
 import com.blukers.automation.config.Platform;
-import com.blukers.automation.pages.base.BasePage;
+import com.blukers.automation.pages.base.BasePage_Backup;
 
-public class HomePageAndroid extends BasePage {
+public class HomePageAndroid extends BasePage_Backup {
 
     private static final String PAGE_NAME = "HomePage";
 
@@ -13,9 +13,7 @@ public class HomePageAndroid extends BasePage {
 
     /* ---------------- Actions ---------------- */
 
-    public void tapSignup() {
-        click("signup_button");
-    }
+    public void tapSignup() { click("signup_button");}
 
     public void tapLogin() {
         click("login_button");

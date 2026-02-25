@@ -1,15 +1,19 @@
 package com.blukers.automation.pages.android;
 
 import com.blukers.automation.config.Platform;
-import com.blukers.automation.pages.base.BasePage;
+import com.blukers.automation.pages.base.BasePage_Backup;
 
-public class ProfileSetupPageAndroid extends BasePage {
+public class ProfileSetupPageAndroid extends BasePage_Backup {
 
     public ProfileSetupPageAndroid() {
-        super("ProfileSetup", Platform.ANDROID);
+        super("ProfileSetupPage", Platform.ANDROID);
     }
 
     public boolean isGetStartedButtonVisible() {
         return isDisplayed("getStartedButton");
+    }
+
+    public void tapGetStartedButton(){
+        click("getStartedButton");
     }
 }

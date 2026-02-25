@@ -1,5 +1,5 @@
 {
-  "get_started_button": {
+  "getStartedButton": {
     "type": "accessibilityId",
     "value": "Get Started"
   }

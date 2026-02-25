@@ -29,7 +29,7 @@ public final class DriverService {
 
         try {
             DriverManager.setDriver(
-                    DriverFactory.createDriver(config)
+                    DriverFactory_Backup.createDriver(config)
             );
             log.info("Appium driver started successfully");
         } catch (Exception e) {

@@ -1,0 +1,21 @@
+{
+  "login_valid": {
+    "email": "mmh1bd+120@gmail.com",
+    "password": "BlukerTesting@2026"
+  },
+
+  "login_invalid_password": {
+    "email": "mmh1bd+200@gmail.com",
+    "password": "WrongPassword123"
+  },
+
+  "login_invalid_email": {
+    "email": "mmh1bd+invalid@gmail.com",
+    "password": "BlukerTesting@2026"
+  },
+
+  "login_blank_credentials": {
+    "email": "",
+    "password": ""
+  }
+}

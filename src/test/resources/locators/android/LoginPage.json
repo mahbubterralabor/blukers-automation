@@ -1,11 +1,11 @@
 {
   "emailInput": {
-    "type": "xpath",
-    "value": "//android.widget.ScrollView/android.widget.EditText"
+    "type": "uiautomator",
+    "value": "new UiSelector().className(\"android.widget.EditText\").instance(0)"
   },
   "passwordInput": {
-    "type": "accessibilityId",
-    "value": "Password"
+    "type": "uiautomator",
+    "value": "new UiSelector().className(\"android.widget.EditText\").instance(1)"
   },
   "loginButton": {
     "type": "accessibilityId",

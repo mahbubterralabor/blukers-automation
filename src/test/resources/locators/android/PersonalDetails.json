@@ -1,0 +1,22 @@
+{
+  "gender_male_button": {
+    "type": "accessibilityId",
+    "value": "Male"
+  },
+  "gender_female_button": {
+    "type": "accessibilityId",
+    "value": "Female"
+  },
+  "dob_open": {
+    "type": "xpath",
+    "value": "//android.view.View[@content-desc=\"Date of Birth\"]/android.view.View"
+  },
+  "dob_confirm": {
+    "type": "accessibilityId",
+    "value": "Confirm"
+  },
+  "next_button": {
+    "type": "accessibilityId",
+    "value": "Next"
+  }
+}

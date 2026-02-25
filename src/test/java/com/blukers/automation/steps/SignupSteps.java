@@ -18,14 +18,19 @@ public class SignupSteps {
     public void iAmOnTheHomeScreeForSignUpn() {
         Assert.assertTrue(
                 homePage.isSignupButtonVisible(),
-                "Signup button should be visible on Home screen"
+                "Signup button isn't visibile"
         );
     }
 
-    @When("I choose to sign up with email")
-    public void iChooseToSignUpWithEmail() {
+    @When("I tap on sign up button")
+    public void iTapOnSignUpButton() {
         homePage.tapSignup();
+    }
+
+    @When("I tap on email option")
+    public void iTapOnEmailOption(){
         optionsPage.selectEmailOption();
+        signupFormPage.waitForFormVisible();
     }
 
     @When("I enter email {string} and password {string}")
@@ -46,4 +51,16 @@ public class SignupSteps {
                 "Profile Setup page was not displayed after signup"
         );
     }
+
+    /*
+    When I choose to sign up with Google
+    And I select existing Google account from the system picker
+    Then I should be navigated to profile setup page
+     */
+
+    @When("When I choose to sign up with Google")
+    public void whenIChooseToSignUpWithGoogle(){
+        //homePage.tapSignUpGoogle();
+    }
+
 }

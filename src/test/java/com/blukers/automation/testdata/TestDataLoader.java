@@ -1,143 +1,102 @@
 package com.blukers.automation.testdata;
 
-import com.blukers.automation.config.Platform;
-import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.io.InputStream;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+/**
+ * Loads test data JSON files and maps specific dataset nodes into typed POJOs.
+ *
+ * Example usage:
+ *   LoginData data =
+ *       TestDataLoader.load("login", "login_valid", LoginData.class);
+ *
+ * JSON structure:
+ * {
+ *   "login_valid": { ... },
+ *   "login_invalid_password": { ... }
+ * }
+ */
 public final class TestDataLoader {
 
     private static final ObjectMapper MAPPER = new ObjectMapper();
 
-    /**
-     * Map-based cache:
-     * ANDROID -> file -> key -> Map<String, String>
-     */
-    private static final Map<Platform, Map<String, Map<String, Map<String, String>>>> MAP_CACHE =
-            new ConcurrentHashMap<>();
-
-    /**
-     * Typed cache:
-     * ANDROID -> file -> key -> T
-     */
-    private static final Map<Platform, Map<String, Map<String, Object>>> TYPED_CACHE =
-            new ConcurrentHashMap<>();
+    // Cache per file path (e.g., testdata/login.json)
+    private static final Map<String, JsonNode> CACHE = new ConcurrentHashMap<>();
 
     private TestDataLoader() {
         // utility class
     }
 
-    // ------------------------------------------------
-    // MAP-BASED ACCESS (Phase 7.1 – still supported)
-    // ------------------------------------------------
-    public static Map<String, String> get(
-            Platform platform,
-            String fileName,
-            String dataKey
-    ) {
+    /**
+     * Loads a dataset from a JSON file and maps it into a POJO.
+     *
+     * @param fileBaseName name of file without extension (e.g., "login")
+     * @param dataKey      dataset key (e.g., "login_valid")
+     * @param clazz        target class
+     */
+    public static <T> T load(String fileBaseName, String dataKey, Class<T> clazz) {
 
-        Map<String, Map<String, String>> fileData =
-                MAP_CACHE
-                        .computeIfAbsent(platform, p -> new ConcurrentHashMap<>())
-                        .computeIfAbsent(fileName, f -> loadMapFile(platform, fileName));
-
-        Map<String, String> data = fileData.get(dataKey);
-
-        if (data == null) {
-            throw new IllegalArgumentException("Test data key not found: " + dataKey);
+        if (fileBaseName == null || fileBaseName.isBlank()) {
+            throw new IllegalArgumentException("fileBaseName must not be blank");
         }
 
-        return data;
-    }
+        if (dataKey == null || dataKey.isBlank()) {
+            throw new IllegalArgumentException("dataKey must not be blank");
+        }
 
-    private static Map<String, Map<String, String>> loadMapFile(
-            Platform platform,
-            String fileName
-    ) {
+        if (clazz == null) {
+            throw new IllegalArgumentException("Target class must not be null");
+        }
 
-        String path = String.format(
-                "testdata/%s/%s.json",
-                platform.name().toLowerCase(),
-                fileName
-        );
+        String resourcePath = String.format("testdata/%s.json", fileBaseName);
 
-        try (InputStream is = TestDataLoader.class
-                .getClassLoader()
-                .getResourceAsStream(path)) {
+        JsonNode root = CACHE.computeIfAbsent(resourcePath, TestDataLoader::loadRootNode);
 
-            if (is == null) {
-                throw new IllegalStateException("Test data file not found: " + path);
-            }
+        JsonNode datasetNode = root.get(dataKey);
 
-            return MAPPER.readValue(
-                    is,
-                    new TypeReference<Map<String, Map<String, String>>>() {}
+        if (datasetNode == null || datasetNode.isNull()) {
+            throw new IllegalStateException(
+                    "Dataset key not found in file: " + resourcePath +
+                            ", key: " + dataKey
             );
+        }
 
+        try {
+            return MAPPER.treeToValue(datasetNode, clazz);
         } catch (Exception e) {
-            throw new RuntimeException("Failed to load test data: " + path, e);
+            throw new RuntimeException(
+                    "Failed to map dataset. file=" + resourcePath +
+                            ", key=" + dataKey +
+                            ", class=" + clazz.getSimpleName(),
+                    e
+            );
         }
     }
 
-    // ------------------------------------------------
-    // TYPED ACCESS (Phase 7.2 – preferred)
-    // ------------------------------------------------
-    @SuppressWarnings("unchecked")
-    public static <T> T getTyped(
-            Platform platform,
-            String fileName,
-            String dataKey,
-            Class<T> type
-    ) {
+    private static JsonNode loadRootNode(String resourcePath) {
 
-        Map<String, Object> fileCache =
-                TYPED_CACHE
-                        .computeIfAbsent(platform, p -> new ConcurrentHashMap<>())
-                        .computeIfAbsent(fileName, f -> loadTypedFile(platform, fileName, type));
-
-        Object data = fileCache.get(dataKey);
-
-        if (data == null) {
-            throw new IllegalArgumentException("Test data key not found: " + dataKey);
-        }
-
-        return (T) data;
-    }
-
-    private static <T> Map<String, Object> loadTypedFile(
-            Platform platform,
-            String fileName,
-            Class<T> type
-    ) {
-
-        String path = String.format(
-                "testdata/%s/%s.json",
-                platform.name().toLowerCase(),
-                fileName
-        );
-
-        try (InputStream is = TestDataLoader.class
-                .getClassLoader()
-                .getResourceAsStream(path)) {
+        try (InputStream is =
+                     TestDataLoader.class
+                             .getClassLoader()
+                             .getResourceAsStream(resourcePath)) {
 
             if (is == null) {
-                throw new IllegalStateException("Test data file not found: " + path);
+                throw new IllegalStateException(
+                        "Test data file not found: " + resourcePath
+                );
             }
 
-            Map<String, T> parsed =
-                    MAPPER.readValue(
-                            is,
-                            MAPPER.getTypeFactory()
-                                    .constructMapType(Map.class, String.class, type)
-                    );
-
-            return new ConcurrentHashMap<>(parsed);
+            return MAPPER.readTree(is);
 
         } catch (Exception e) {
-            throw new RuntimeException("Failed to load test data: " + path, e);
+            throw new RuntimeException(
+                    "Failed to load test data file: " + resourcePath,
+                    e
+            );
         }
     }
 }
