@@ -26,19 +26,6 @@ public class LoginSteps {
                 homePage.isLoginButtonDisplayed(),
                 "Login option is not available on Home screen."
         );
-
-        String dataKey = TestDataContext.getDataKey();
-        Assert.assertNotNull(dataKey,
-                "Missing @data_* tag on Scenario (Hooks could not resolve a dataKey). Example: @data_login_valid"
-        );
-
-        // For login feature, file name is "login" => testdata/login.json
-        this.loginData = TestDataLoader.load("login", dataKey, LoginData.class);
-
-        Assert.assertNotNull(
-                loginData,
-                "LoginData was not loaded. Check testdata/login.json and tag key: " + dataKey
-        );
     }
 
     @When("I tap on homepage login button")
@@ -53,10 +40,17 @@ public class LoginSteps {
 
     @When("I enter login credentials")
     public void iEnterLoginCredentials() {
+        String dataKey = TestDataContext.getDataKey();
+        Assert.assertNotNull(dataKey,
+                "Missing @data_* tag on Scenario (Hooks could not resolve a dataKey). Example: @data_login_valid"
+        );
+
+        // For login feature, file name is "login" => testdata/login.json
+        this.loginData = TestDataLoader.load("login", dataKey, LoginData.class);
 
         Assert.assertNotNull(
                 loginData,
-                "LoginData is null. Ensure scenario has @data_* tag and Given step ran."
+                "LoginData was not loaded. Check testdata/login.json and tag key: " + dataKey
         );
 
         loginPage.enterEmail(loginData.getEmail());
@@ -76,13 +70,6 @@ public class LoginSteps {
         );
     }
 
-//    @Then("I should receive login attempt fail message")
-//    public void iShouldReceiveLoginAttemptFailMessage() {
-//        Assert.assertTrue(
-//                loginPage.isLoginErrorMessageVisible(),
-//                "Expected login failure message was not displayed."
-//        );
-//    }
     @Then ("I should remain on the login page")
     public void iShouldRemainOnTheLoginPage(){
         Assert.assertTrue(

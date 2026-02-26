@@ -14,7 +14,7 @@ import io.cucumber.testng.CucumberOptions;
                 "html:target/cucumber-report.html",
                 "json:target/cucumber-report.json"
         },
-        tags = "@login_invalid"
+        tags = "@login"
 )
 public class CucumberTestRunner extends AbstractTestNGCucumberTests {
 }

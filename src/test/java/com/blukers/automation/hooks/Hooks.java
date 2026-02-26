@@ -8,24 +8,26 @@ import com.blukers.automation.driver.DriverService;
 import com.blukers.automation.testdata.TestDataContext;
 import com.blukers.automation.testdata.TestDataTagResolver;
 import com.blukers.automation.util.Log;
-import io.cucumber.java.After;
-import io.cucumber.java.Before;
-import io.cucumber.java.Scenario;
+import io.cucumber.java.*;
 import org.slf4j.Logger;
 
 public class Hooks {
 
     private static final Logger log = Log.get(Hooks.class);
 
-    private FrameworkConfig config;
+    private static FrameworkConfig config;
+
+    @BeforeAll
+    public static void beforeAll() {
+        config = ConfigLoader.load();
+        ConfigValidator.validate(config);
+        DriverService.start(config);
+    }
 
     @Before
     public void beforeScenario(Scenario scenario) {
         log.info("===== Scenario setup started =====");
 
-        config = ConfigLoader.load();
-        ConfigValidator.validate(config);
-        DriverService.start(config);
         AppStateManager.relaunch(config);
 
         // Resolve and store @data_* key for this scenario
@@ -49,5 +51,18 @@ public class Hooks {
         TestDataContext.clear();
 
         log.info("===== Scenario teardown completed =====");
+    }
+
+    @AfterAll
+    public static void afterAll() {
+        log.info("===== Test run teardown started =====");
+
+        try {
+            DriverService.stop();
+        } finally {
+            config = null;
+        }
+
+        log.info("===== Test run teardown completed =====");
     }
 }

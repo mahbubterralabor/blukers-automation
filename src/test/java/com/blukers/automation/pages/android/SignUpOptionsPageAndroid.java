@@ -1,13 +1,13 @@
 package com.blukers.automation.pages.android;
 
 import com.blukers.automation.config.Platform;
-import com.blukers.automation.pages.base.BasePage_Backup;
+import com.blukers.automation.pages.base.BasePage;
 
 /**
  * Android page for Signup Options screen
  * (Email / Google / Apple selection).
  */
-public class SignUpOptionsPageAndroid extends BasePage_Backup {
+public class SignUpOptionsPageAndroid extends BasePage {
 
     public SignUpOptionsPageAndroid() {
         super("SignUpOptionsPage", Platform.ANDROID);

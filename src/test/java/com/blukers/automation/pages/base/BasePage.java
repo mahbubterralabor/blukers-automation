@@ -5,6 +5,8 @@ import com.blukers.automation.driver.DriverManager;
 import com.blukers.automation.locators.LocatorLoader;
 import com.blukers.automation.locators.LocatorModel;
 import io.appium.java_client.AppiumDriver;
+import io.appium.java_client.HidesKeyboard;
+import org.openqa.selenium.By;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
@@ -14,51 +16,102 @@ import java.util.List;
 import java.util.Map;
 
 public abstract class BasePage {
+
     protected final AppiumDriver driver;
     protected final Map<String, LocatorModel> locators;
-    private final WebDriverWait fastWait;
 
     protected BasePage(String pageName, Platform platform) {
         this.driver = DriverManager.getDriver();
         this.locators = LocatorLoader.load(platform, pageName);
-        // Polling every 100ms so Appium "wakes up" faster when an element is ready
-        this.fastWait = new WebDriverWait(driver, Duration.ofSeconds(10), Duration.ofMillis(100));
     }
 
-    protected WebElement waitForPresence(String key) {
-        return fastWait.until(ExpectedConditions.presenceOfElementLocated(locators.get(key).toBy()));
+    /* ------------------ Wait helpers ------------------ */
+
+    protected WebElement waitForVisible(String key) {
+        LocatorModel locator = locators.get(key);
+        if (locator == null) {
+            throw new IllegalArgumentException("Locator not found for key: " + key);
+        }
+        WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(5));
+        return wait.until(ExpectedConditions.visibilityOfElementLocated(locator.toBy()));
     }
 
-    public void enterText(String key, String text) {
-        WebElement element = waitForPresence(key);
+    /* ------------------ Action helpers ------------------ */
+
+    protected void click(String key) {
+        waitForVisible(key).click();
+        //driver.findElement(By.id(key)).click();
+    }
+
+    protected void type(String key, String text) {
+        adbType(key,text);
+    }
+
+    /**
+     * ADB shell typing. Often more reliable for Flutter inputs.
+     * Requires: automationName UiAutomator2 and device allows adb input.
+     */
+    protected void adbType(String key, String text) {
+        WebElement element = waitForVisible(key);
         element.click();
-
-        // OPTIMIZATION: Do NOT call clear() or hideKeyboard() here.
-        // Use a single shell command to clear the existing text if necessary.
-        driver.executeScript("mobile: shell", Map.of(
-                "command", "input",
-                "args", List.of("keyevent", "KEYCODE_MOVE_END", "--longpress", "67")
-        ));
-
-        // Direct input: This is the fastest way to send text to a focused field
-        String escapedText = text.replace(" ", "%s");
-        driver.executeScript("mobile: shell", Map.of(
-                "command", "input",
-                "args", List.of("text", escapedText)
-        ));
-
-        // IMPORTANT: Only hide keyboard after the PASSWORD, never between email and password.
-        if (key.toLowerCase().contains("password")) {
-            // Use a Back keyevent instead of hideKeyboard() - it's much faster
+        element.clear();
+        String value = element.getText();
+        if (!value.trim().isEmpty()) {
+            try {
+                for (int i = 0; i < 50; i++) {
+                    driver.executeScript("mobile: shell", Map.of(
+                            "command", "input",
+                            "args", List.of("keyevent", "KEYCODE_DEL")
+                    ));
+                }
+            } catch (Exception ignored) {
+            }
+        }
+        try {
             driver.executeScript("mobile: shell", Map.of(
                     "command", "input",
-                    "args", List.of("keyevent", "4") // 4 is the Back button
+                    "args", List.of("text", text)
             ));
+        } catch (Exception ignored) {
+        }
+
+        try { Thread.sleep(300); } catch (InterruptedException ignored) {}
+        hideKeyboard();
+    }
+
+    /**
+     * Unified typing API for all pages:
+     * Try sendKeys first, fallback to adbType if sendKeys fails / is flaky.
+     */
+    protected void hideKeyboard() {
+        try {
+            if (driver instanceof HidesKeyboard) {
+                ((HidesKeyboard) driver).hideKeyboard();
+            }
+        } catch (Exception ignored) {
+            // Keyboard may not be present; do not fail tests for this.
         }
     }
 
-    public void click(String key) {
-        // Taps immediately once found in the XML tree
-        waitForPresence(key).click();
+    /* ------------------ State helpers ------------------ */
+
+    protected boolean isDisplayed(String key) {
+        try {
+            return waitForVisible(key).isDisplayed();
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    protected String getText(String key) {
+        return waitForVisible(key).getText();
+    }
+
+    protected boolean isEnabled(String key) {
+        try {
+            return waitForVisible(key).isEnabled();
+        } catch (Exception e) {
+            return false;
+        }
     }
 }

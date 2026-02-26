@@ -1,7 +1,7 @@
 package com.blukers.automation.pages.android;
 
 import com.blukers.automation.config.Platform;
-import com.blukers.automation.pages.base.BasePage_Backup;
+import com.blukers.automation.pages.base.BasePage;
 import io.appium.java_client.AppiumBy;
 import org.openqa.selenium.WebElement;
 
@@ -10,7 +10,7 @@ import java.time.format.TextStyle;
 import java.util.List;
 import java.util.Locale;
 
-public class PersonalDetailsAndroid extends BasePage_Backup {
+public class PersonalDetailsAndroid extends BasePage {
 
     public PersonalDetailsAndroid() {
         super("PersonalDetails", Platform.ANDROID);

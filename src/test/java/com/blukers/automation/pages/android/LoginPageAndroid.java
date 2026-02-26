@@ -1,7 +1,7 @@
 package com.blukers.automation.pages.android;
 
 import com.blukers.automation.config.Platform;
-import com.blukers.automation.pages.base.BasePage_Backup;
+import com.blukers.automation.pages.base.BasePage;
 
 /**
  * Android Page Object for Login screen.
@@ -14,7 +14,7 @@ import com.blukers.automation.pages.base.BasePage_Backup;
  * Optional (for invalid login assertions):
  * - loginErrorMessage   (or rename, but keep in sync with this class)
  */
-public class LoginPageAndroid extends BasePage_Backup {
+public class LoginPageAndroid extends BasePage {
 
     private static final String PAGE_NAME = "LoginPage";
 
@@ -25,30 +25,19 @@ public class LoginPageAndroid extends BasePage_Backup {
     /* ------------------ Screen state ------------------ */
 
     public boolean isLoginScreenVisible() {
-        // Any unique element on Login screen is fine
-        return isDisplayed("emailInput") || isDisplayed("passwordInput") || isDisplayed("loginButton");
-    }
-
-    public void waitForLoginScreen() {
-        waitForVisible("emailInput");
-        waitForVisible("passwordInput");
-        waitForVisible("loginButton");
+        return isDisplayed("emailInput");
     }
 
     /* ------------------ Actions ------------------ */
 
     public void enterEmail(String email) {
-        enterText("emailInput", email);
+        adbType("emailInput", email);
     }
 
     public void enterPassword(String password) {
-        enterText("passwordInput", password);
+        adbType("passwordInput", password);
     }
 
-    public void enterCredentials(String email, String password) {
-        enterEmail(email);
-        enterPassword(password);
-    }
 
     public void tapOnLogInButton() {
         click("loginButton");
@@ -62,10 +51,6 @@ public class LoginPageAndroid extends BasePage_Backup {
 
     /* ------------------ Error handling ------------------ */
 
-    /**
-     * For invalid login scenarios.
-     * Add locator key "loginErrorMessage" in LoginPage.json.
-     */
     public boolean isLoginErrorMessageVisible() {
         return isDisplayed("loginErrorMessage");
     }

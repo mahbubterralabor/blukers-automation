@@ -8,14 +8,14 @@ Feature: Login
   Background:
     Given I am on the home screen for login
 
-  @login_valid @happy @regression @data_login_valid
+  @login @login_valid @happy @regression @data_login_valid
   Scenario: Successful login with valid credentials
     When I tap on homepage login button
     And I enter login credentials
     And I tap on login button
     Then I should be navigated to job search page
 
-  @login_invalid @negative @regression @data_login_invalid_password
+  @login @login_invalid @negative @regression @data_login_invalid_password
   Scenario: Login try with incorrect password
     When I tap on homepage login button
     And I enter login credentials
