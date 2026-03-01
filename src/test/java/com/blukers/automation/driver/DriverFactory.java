@@ -3,30 +3,41 @@ package com.blukers.automation.driver;
 import com.blukers.automation.config.FrameworkConfig;
 import com.blukers.automation.config.Platform;
 import com.blukers.automation.config.app.AppConfig;
-import com.blukers.automation.config.appium.AppiumConfig;
 import com.blukers.automation.config.platform.android.AndroidConfig;
 import com.blukers.automation.config.platform.ios.IOSConfig;
-
+import com.blukers.automation.util.Log;
 import io.appium.java_client.AppiumDriver;
 import io.appium.java_client.android.AndroidDriver;
 import io.appium.java_client.android.options.UiAutomator2Options;
 import io.appium.java_client.ios.IOSDriver;
 import io.appium.java_client.ios.options.XCUITestOptions;
+import org.slf4j.Logger;
 
 import java.net.URI;
 import java.time.Duration;
 
 public final class DriverFactory {
 
+    private static final Logger log = Log.get(DriverFactory.class);
+
     private DriverFactory() {}
 
     public static AppiumDriver createDriver(FrameworkConfig config) {
         Platform platform = config.getPlatform();
+        log.info("Creating driver for platform={}", platform);
+
         try {
-            return switch (platform) {
+            AppiumDriver driver = switch (platform) {
                 case ANDROID -> createAndroidDriver(config);
                 case IOS -> createIOSDriver(config);
             };
+
+            log.info("Driver created. sessionId={}, platformName={}, automationName={}",
+                    driver.getSessionId(),
+                    driver.getCapabilities().getCapability("platformName"),
+                    driver.getCapabilities().getCapability("appium:automationName"));
+
+            return driver;
         } catch (Exception e) {
             throw new RuntimeException("Failed to create Appium driver for: " + platform, e);
         }
@@ -43,22 +54,11 @@ public final class DriverFactory {
                 .setAppPackage(android.getAppPackage())
                 .setAppActivity(android.getAppActivity());
 
-        // --- SPEED & PERFORMANCE CAPABILITIES ---
-
-        // 1. Disable Idle Wait: Forces immediate action despite Flutter animations
         options.setCapability("appium:waitForIdleTimeout", 0);
-
-        // 2. Ignore Views: Simplifies the UI tree so Appium finds elements faster
         options.setCapability("appium:settings[ignoreUnimportantViews]", true);
-
-        // 3. Fast Input: Uses Appium's internal IME for rapid text entry
         options.setCapability("appium:unicodeKeyboard", true);
         options.setCapability("appium:resetKeyboard", true);
-
-        // 4. OS Optimization: Prevents Android window animations from delaying clicks
         options.setCapability("appium:disableWindowAnimation", true);
-
-        // 5. Debugging: Adds timestamps to logs to identify bottlenecks
         options.setCapability("appium:eventTimings", true);
 
         if (app.getAppPath() != null && !app.getAppPath().isBlank()) {
@@ -68,11 +68,11 @@ public final class DriverFactory {
             options.setUdid(android.getDeviceUdid());
         }
 
+        log.info("Android caps: appPackage={}, appActivity={}, udid={}, noReset={}",
+                android.getAppPackage(), android.getAppActivity(), android.getDeviceUdid(), app.isNoReset());
+
         AndroidDriver driver = new AndroidDriver(URI.create(config.getAppium().getServerUrl()).toURL(), options);
-
-        // CRITICAL: Set Implicit Wait to ZERO. Only use WebDriverWait in BasePage.
         driver.manage().timeouts().implicitlyWait(Duration.ZERO);
-
         return driver;
     }
 
@@ -86,16 +86,18 @@ public final class DriverFactory {
                 .setNoReset(app.isNoReset())
                 .setBundleId(ios.getBundleId());
 
-        // iOS Performance Optimization
         options.setCapability("appium:waitForQuiescence", false);
 
         if (app.getAppPath() != null && !app.getAppPath().isBlank()) {
             options.setApp(app.getAppPath());
         }
 
+        log.info("iOS caps: bundleId={}, noReset={}, appPathPresent={}",
+                ios.getBundleId(), app.isNoReset(),
+                app.getAppPath() != null && !app.getAppPath().isBlank());
+
         IOSDriver driver = new IOSDriver(URI.create(config.getAppium().getServerUrl()).toURL(), options);
         driver.manage().timeouts().implicitlyWait(Duration.ZERO);
-
         return driver;
     }
 }

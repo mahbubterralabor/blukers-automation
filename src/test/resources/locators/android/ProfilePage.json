@@ -1,0 +1,14 @@
+{
+  "Bottom_Profile_Icon": {
+    "type": "uiautomator",
+    "value": "new UiSelector().className(\"android.widget.ImageView\").instance(8)"
+  },
+  "Logout_Button": {
+    "type": "accessibilityId",
+    "value": "Logout"
+  },
+  "Account_Button": {
+    "type": "accessibilityId",
+    "value": "Account"
+  }
+}

@@ -5,7 +5,6 @@ import com.blukers.automation.config.Platform;
 import com.blukers.automation.driver.DriverManager;
 import com.blukers.automation.util.Log;
 import io.appium.java_client.AppiumDriver;
-import io.appium.java_client.android.AndroidDriver;
 import org.slf4j.Logger;
 
 import java.time.Duration;
@@ -21,154 +20,171 @@ public final class AppStateManager {
     // 2 = running in background (suspended)
     // 3 = running in background
     // 4 = running in foreground
-    private static final int STATE_FOREGROUND = 4;
-    private static final int STATE_BACKGROUND = 3;
-    private static final int STATE_BACKGROUND_SUSPENDED = 2;
+    private static final int NOT_INSTALLED = 0;
+    private static final int NOT_RUNNING = 1;
+    private static final int BG_SUSPENDED = 2;
+    private static final int BG = 3;
+    private static final int FG = 4;
+
+    private static final Duration DEFAULT_FOREGROUND_TIMEOUT = Duration.ofSeconds(10);
+    private static final Duration DEFAULT_RELAUNCH_TIMEOUT = Duration.ofSeconds(20);
+
+    public enum HealthStatus {
+        OK,
+        RELAUNCH_RECOMMENDED,
+        SESSION_INVALID
+    }
 
     private AppStateManager() {}
 
-    /** Relaunch = terminate + activate + verify app is in FOREGROUND. */
-    public static void relaunch(FrameworkConfig config) {
-        String appId = resolveAppId(config);
-
-        terminate(config);
-        // small buffer for OS to settle (especially on real devices)
-        sleep(500);
-
-        activate(config);
-
-        // Sometimes it launches but stays background; force foreground again if needed
-        int state = queryState(appId);
-        log.info("App state after activate: {} (appId={})", state, appId);
-
-        if (state == STATE_BACKGROUND || state == STATE_BACKGROUND_SUSPENDED) {
-            log.warn("App is running but not foreground. Forcing foreground again (appId={})", appId);
-            activate(config);
+    /**
+     * Health check used by Hooks to decide relaunch vs ensureForeground vs driver restart.
+     * - If session invalid -> SESSION_INVALID
+     * - If app not installed -> RELAUNCH_RECOMMENDED (will fail later anyway, but keeps flow consistent)
+     * - If app not running -> RELAUNCH_RECOMMENDED
+     * - If background -> OK (ensureForeground is enough)
+     * - If foreground -> OK
+     */
+    public static HealthStatus checkHealth(FrameworkConfig config) {
+        if (!DriverManager.hasDriver()) {
+            return HealthStatus.SESSION_INVALID;
         }
 
-        waitForState(appId, STATE_FOREGROUND, Duration.ofSeconds(20));
-    }
-
-    /** Bring app to foreground (Android uses startActivity; iOS uses activateApp). */
-    public static void activate(FrameworkConfig config) {
-        if (config == null) throw new IllegalArgumentException("FrameworkConfig is null");
         AppiumDriver driver = DriverManager.getDriver();
-        String appId = resolveAppId(config);
-
-        if (config.getPlatform() == Platform.ANDROID) {
-            // Use activateApp instead of mobile: startActivity for better stability
-            // This avoids the "No intent supplied" ADB error
-            try {
-                driver.executeScript("mobile: activateApp", Map.of("appId", appId));
-            } catch (Exception e) {
-                log.warn("mobile: activateApp failed, falling back to shell start");
-                String activity = config.getAndroid().getAppActivity();
-                driver.executeScript("mobile: shell", Map.of(
-                        "command", "am",
-                        "args", java.util.List.of("start", "-n", appId + "/" + activity)
-                ));
-            }
-        } else {
-            driver.executeScript("mobile: activateApp", Map.of("appId", appId));
+        if (driver.getSessionId() == null) {
+            return HealthStatus.SESSION_INVALID;
         }
-    }
 
-    /** Terminate app (with Android fallback force-stop if needed). */
-    public static void terminate(FrameworkConfig config) {
         String appId = resolveAppId(config);
-        AppiumDriver driver = DriverManager.getDriver();
 
         try {
-            driver.executeScript("mobile: terminateApp", Map.of("appId", appId));
-        } catch (Exception primary) {
-            log.warn("terminateApp failed. Trying Android force-stop fallback. appId={}. Error={}",
-                    appId, primary.getMessage());
+            int state = queryState(appId);
+            log.info("Health check appState={} (appId={})", state, appId);
 
-            // Android fallback: adb am force-stop <package>
-            if (config.getPlatform() == Platform.ANDROID && driver instanceof AndroidDriver) {
-                try {
-                    driver.executeScript("mobile: shell", Map.of(
-                            "command", "am",
-                            "args", java.util.List.of("force-stop", appId)
-                    ));
-                } catch (Exception fallback) {
-                    throw new RuntimeException("Failed to terminate app (both terminateApp and force-stop). appId=" + appId, fallback);
-                }
-            } else {
-                throw new RuntimeException("Failed to terminate app. appId=" + appId, primary);
-            }
+            if (state == NOT_INSTALLED) return HealthStatus.RELAUNCH_RECOMMENDED;
+            if (state == NOT_RUNNING) return HealthStatus.RELAUNCH_RECOMMENDED;
+
+            // BG / BG_SUSPENDED / FG are recoverable by ensureForeground()
+            return HealthStatus.OK;
+
+        } catch (Exception e) {
+            // If queryAppState fails, it is usually session instability or driver issue
+            log.warn("Health check failed (queryAppState). Treating as SESSION_INVALID. err={}", e.getMessage());
+            return HealthStatus.SESSION_INVALID;
         }
-
-        // Wait until app is not foreground anymore (or stopped)
-        waitUntilNotForeground(appId, Duration.ofSeconds(10));
     }
 
-    /** Query current app state via Appium. */
-    public static int queryState(String appId) {
+    /**
+     * Conditional foregrounding:
+     * - If already foreground -> do nothing
+     * - Else activate -> wait for FG
+     */
+    public static void ensureForeground(FrameworkConfig config) {
+        ensureForeground(config, DEFAULT_FOREGROUND_TIMEOUT);
+    }
+
+    public static void ensureForeground(FrameworkConfig config, Duration timeout) {
+        requireDriverReady();
+
+        String appId = resolveAppId(config);
+
+        int state = safeQueryState(appId);
+        log.info("ensureForeground: currentState={} (appId={})", state, appId);
+
+        if (state == FG) return;
+
+        activate(appId);
+
+        waitForState(appId, FG, timeout);
+
+        log.info("ensureForeground: finalState={} (appId={})", safeQueryState(appId), appId);
+    }
+
+    /**
+     * Straight relaunch (no conditions inside):
+     * terminate -> activate -> wait FG
+     */
+    public static void relaunch(FrameworkConfig config) {
+        relaunch(config, DEFAULT_RELAUNCH_TIMEOUT);
+    }
+
+    public static void relaunch(FrameworkConfig config, Duration timeout) {
+        requireDriverReady();
+
+        String appId = resolveAppId(config);
+
+        terminate(appId);
+        sleep(350);
+
+        activate(appId);
+
+        waitForState(appId, FG, timeout);
+
+        log.info("relaunch: finalState={} (appId={})", safeQueryState(appId), appId);
+    }
+
+    /* ===================== Low-level actions ===================== */
+
+    private static void activate(String appId) {
+        AppiumDriver driver = DriverManager.getDriver();
+        driver.executeScript("mobile: activateApp", Map.of("appId", appId));
+    }
+
+    private static void terminate(String appId) {
+        AppiumDriver driver = DriverManager.getDriver();
+        driver.executeScript("mobile: terminateApp", Map.of("appId", appId));
+    }
+
+    private static int queryState(String appId) {
         AppiumDriver driver = DriverManager.getDriver();
         Object result = driver.executeScript("mobile: queryAppState", Map.of("appId", appId));
 
-        if (result instanceof Number n) {
-            return n.intValue();
-        }
-        // Some servers return String
-        if (result instanceof String s) {
-            try {
-                return Integer.parseInt(s.trim());
-            } catch (Exception ignored) {}
-        }
+        if (result instanceof Number n) return n.intValue();
+        if (result instanceof String s) return Integer.parseInt(s.trim());
 
         throw new IllegalStateException("Unexpected queryAppState response: " + result);
     }
 
-    /** Wait for an exact expected state (e.g., foreground=4). */
-    public static void waitForState(String appId, int expectedState, Duration timeout) {
+    private static int safeQueryState(String appId) {
+        try {
+            return queryState(appId);
+        } catch (Exception e) {
+            log.warn("queryAppState failed: appId={} err={}", appId, e.getMessage());
+            return NOT_RUNNING;
+        }
+    }
+
+    private static void waitForState(String appId, int expected, Duration timeout) {
         long end = System.currentTimeMillis() + timeout.toMillis();
-
         int last = -1;
+
         while (System.currentTimeMillis() < end) {
-            int state = queryState(appId);
-            last = state;
-
-            if (state == expectedState) {
-                return;
-            }
-
-            sleep(300);
+            last = safeQueryState(appId);
+            if (last == expected) return;
+            sleep(200);
         }
 
         throw new IllegalStateException(
-                "App did not reach expected state. expected=" + expectedState +
+                "App did not reach expected state. expected=" + expected +
                         ", actual=" + last + ", appId=" + appId
         );
     }
 
-    /** Wait until app is NOT in foreground (useful after terminate). */
-    private static void waitUntilNotForeground(String appId, Duration timeout) {
-        long end = System.currentTimeMillis() + timeout.toMillis();
-
-        int last = -1;
-        while (System.currentTimeMillis() < end) {
-            int state = queryState(appId);
-            last = state;
-
-            if (state != STATE_FOREGROUND) {
-                return;
-            }
-
-            sleep(300);
+    private static void requireDriverReady() {
+        if (!DriverManager.hasDriver()) {
+            throw new IllegalStateException("Driver is not initialized. Start driver before using AppStateManager.");
         }
-
-        log.warn("App still appears foreground after terminate wait. lastState={} appId={}", last, appId);
+        AppiumDriver driver = DriverManager.getDriver();
+        if (driver.getSessionId() == null) {
+            throw new IllegalStateException("Driver session is null (invalid session). Restart driver session.");
+        }
     }
 
-    /** Resolve appId from config (Android package or iOS bundle id). */
     private static String resolveAppId(FrameworkConfig config) {
-        if (config == null) {
-            throw new IllegalArgumentException("FrameworkConfig is null");
-        }
+        if (config == null) throw new IllegalArgumentException("FrameworkConfig is null");
 
-        return switch (config.getPlatform()) {
+        Platform platform = config.getPlatform();
+        return switch (platform) {
             case ANDROID -> {
                 String pkg = config.getAndroid().getAppPackage();
                 if (pkg == null || pkg.isBlank()) {
@@ -187,10 +203,7 @@ public final class AppStateManager {
     }
 
     private static void sleep(long ms) {
-        try {
-            Thread.sleep(ms);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-        }
+        try { Thread.sleep(ms); }
+        catch (InterruptedException e) { Thread.currentThread().interrupt(); }
     }
 }
